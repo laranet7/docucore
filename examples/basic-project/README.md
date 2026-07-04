@@ -1,4 +1,3 @@
 # Basic Project Example
 
-Este directorio existe como placeholder para futuros ejemplos de proyectos objetivo que puedan usarse para demos y pruebas manuales de DocuCore.
-
+This directory is a placeholder for future sample repositories that can be used for demos, manual validation, or documentation examples without exposing private projects.

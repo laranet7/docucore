@@ -1,43 +1,75 @@
-# Arquitectura de DocuCore
+# Architecture
 
-## Vision general
+## Overview
 
-DocuCore separa la captura de datos tecnicos de la narrativa documental. El scanner y los plugins detectan estructura y hallazgos; luego los generators y exporters convierten esos datos en salidas reutilizables.
+DocuCore is organized as a reusable documentation engine with clear separation between scanning, structured analysis, document generation, export, and orchestration.
 
-## Capas
+## Core
 
-### Core generico
+`docucore/core` contains the execution services that coordinate configuration loading, runtime resolution, filesystem traversal, output planning, snapshots, status reporting, and manifest generation.
 
-La carpeta `docucore/core` concentra configuracion, recorrido de archivos, manifest, snapshots, estado y escritura de outputs. Esta capa no depende de stacks concretos ni de IA.
+## CLI
 
-### Plugins
+`docucore/cli.py` exposes the public commands:
 
-La carpeta `docucore/plugins` encapsula detecciones por tecnologia. Cada plugin recibe el root del proyecto y la lista de archivos ya filtrados. Debe devolver datos estructurados, hallazgos y advertencias.
+- `init`
+- `scan`
+- `build`
+- `snapshot`
+- `status`
 
-### Generators
+The CLI is intentionally thin and delegates behavior to the core services.
 
-La carpeta `docucore/generators` transforma resultados crudos de scan en modelos documentales reutilizables, como inventarios y snapshots.
+## Runtime context
 
-### Exporters
+The runtime context resolves:
 
-La carpeta `docucore/exporters` decide como serializar los modelos. En esta iteracion Markdown es funcional y DOCX/PDF son placeholders controlados.
+- the project being read
+- the documentation destination being written
+- the configuration file to load
 
-### CLI
+This design allows DocuCore to work both on the current project and on external repositories through `--project` and `--output`.
 
-La CLI orquesta el flujo de trabajo con comandos pequenos y claros: `init`, `scan`, `build`, `snapshot` y `status`.
+## Scanner
 
-## Flujo de ejecucion
+The scanner walks the repository according to `include_paths` and `exclude_paths`, collects filtered files, and passes them to the enabled plugins.
 
-1. `init` crea estructura y configuracion base.
-2. `scan` carga config, recorre archivos y ejecuta plugins.
-3. `build` combina scan, inventario, snapshot, latest y manifest.
-4. `snapshot` versiona outputs existentes.
-5. `status` inspecciona el estado documental del proyecto.
+## Plugins
 
-## Separacion entre datos y narrativa
+Plugins detect technical signals and return structured data, findings, and warnings. Plugins do not write Markdown directly. They are responsible only for deterministic detection and analysis.
 
-Los plugins nunca generan Markdown directamente. Primero producen datos estructurados. Luego los generators consolidan esos datos y los exporters producen la capa documental final.
+## Generators
 
-## Regla de estilo documental
+Generators convert structured scan results into documentation-oriented content. This includes inventory, architecture, modules, backend, frontend, infrastructure, and snapshot narratives.
 
-Los documentos generados por DocuCore deben mantener una redaccion tecnica, institucional, objetiva e impersonal. La narrativa debe apoyarse en evidencia detectada automaticamente y evitar formulaciones subjetivas o centradas en el autor. Cuando la evidencia sea parcial, la redaccion debe usar lenguaje prudente y explicitar la necesidad de validacion tecnica manual.
+## Exporters
+
+Exporters serialize generated content. Markdown is the functional exporter in the current baseline. DOCX and PDF modules exist as controlled placeholders for future work.
+
+## Outputs
+
+Configured outputs are written under `outputs/` and then copied into `latest/` and `historical/<snapshot_id>/` during snapshot creation.
+
+## Snapshots
+
+Snapshots capture the generated documentation state at a point in time. They support versioned historical comparison without mutating the source project.
+
+## Latest
+
+`latest/` represents the most recent generated documentation state and acts as the default current view for consumers.
+
+## Manifest
+
+`manifest.json` records the generated outputs, snapshot identifier, enabled plugins, project metadata, and DocuCore version.
+
+## External project mode
+
+DocuCore can read a project from one path and write documentation to a different workspace path. In this mode, DocuCore remains independent from the target repository and does not copy the project itself.
+
+## No AI in base mode
+
+DocuCore operates in base mode without AI. Repository scanning, plugin detection, and Markdown generation are deterministic. An optional AI enrichment layer may be added later on top of generated artifacts, but it is not part of the current baseline.
+
+## Documentation style rule
+
+Generated documentation should remain technical, institutional, objective, impersonal, and evidence-based. When evidence is incomplete, the wording should explicitly state the limitation and recommend manual technical validation where appropriate.

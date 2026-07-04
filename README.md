@@ -1,19 +1,52 @@
+![CI](https://github.com/<OWNER>/<REPO>/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 # DocuCore
 
-DocuCore es un motor generico de documentacion viva para proyectos de software. El modo base funciona sin IA y genera artefactos documentales a partir de escaneo de archivos, plugins deterministicos, reglas de deteccion y generadores Markdown.
+## What is DocuCore?
 
-## Que es DocuCore
+DocuCore is a reusable living documentation engine for software projects. It scans repositories, detects structure and technical signals through deterministic plugins, generates Markdown documentation, maintains `historical/` snapshots, and updates a `latest/` view for the most recent run.
 
-DocuCore analiza un repositorio, identifica tecnologias, estructura tecnica y artefactos relevantes, y genera una base documental reutilizable. El proyecto separa deteccion, generacion y exportacion para mantener un core extensible y desacoplado de proyectos concretos.
+## Why DocuCore?
 
-## Objetivo
+Many projects need technical documentation that stays close to the codebase without introducing external services, hidden heuristics, or mandatory AI dependencies. DocuCore provides a predictable baseline workflow that can be executed locally, in CI, or against external repositories.
 
-- Crear una base solida para documentacion automatizada y extensible.
-- Separar `core`, `plugins`, `generators`, `exporters` y `cli` desde el inicio.
-- Mantener una operacion deterministica en el modo base.
-- Reservar la IA como enriquecimiento opcional futuro sobre artefactos ya generados.
+## Features
 
-## Instalacion local
+- CLI commands for `init`, `scan`, `build`, `snapshot`, and `status`
+- Generic repository scanning with configurable include and exclude paths
+- Deterministic plugin architecture for stack-specific detection
+- Markdown generation for inventory, architecture, modules, backend, frontend, infrastructure, and snapshots
+- Historical snapshots plus a `latest/` documentation view
+- External project mode through `--project` and `--output`
+- Base mode without AI dependencies or external services
+
+## What DocuCore generates
+
+DocuCore can generate:
+
+- `inventory.json`
+- `inventory.md`
+- `architecture.md`
+- `modules.md`
+- `backend.md`
+- `frontend.md`
+- `infrastructure.md`
+- `manifest.json`
+- `snapshot.md`
+
+The exact set depends on the configured `outputs` list in `project.config.json`.
+
+## How it works
+
+1. DocuCore resolves the runtime context for the target project and documentation output.
+2. The scanner walks the repository while respecting include and exclude rules.
+3. Deterministic plugins detect technologies, structure, and technical signals.
+4. Generators convert structured plugin data into documentation artifacts.
+5. `build` updates `latest/`, writes a manifest, and stores a historical snapshot.
+
+## Installation
 
 ### Windows
 
@@ -21,6 +54,7 @@ DocuCore analiza un repositorio, identifica tecnologias, estructura tecnica y ar
 python -m venv .venv
 .venv\Scripts\activate
 pip install -e ".[dev]"
+docucore --help
 ```
 
 ### Linux / Mac
@@ -29,98 +63,104 @@ pip install -e ".[dev]"
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+docucore --help
 ```
 
-## Uso basico
+## Quick start
 
 ```bash
-docucore --help
 docucore init --project-name "Demo Project" --project-code "DEMO"
-docucore scan
 docucore build
 docucore status
 ```
 
-## Modo proyecto actual
+## Document the current project
 
-Si no se especifica `--project`, DocuCore usa el directorio actual como proyecto objetivo. Si no se especifica `--output`, escribe la documentacion en `<project>/documentacion`.
-
-Flujo recomendado:
+If `--project` is not provided, DocuCore uses the current directory as the project being read. If `--output` is not provided, DocuCore writes documentation to `<project>/documentacion`.
 
 ```bash
 docucore init
+docucore scan
 docucore build
+docucore snapshot
 docucore status
-pytest
 ```
 
-## Modo proyecto externo
+## Document an external project
 
-DocuCore puede leer un repositorio objetivo y escribir la documentacion en un workspace separado.
+DocuCore can read a target repository from one path and write documentation to a separate workspace.
 
 ### Windows
 
 ```bash
-docucore init --project "D:\Repos\SampleProject" --output "D:\Repos\DocuCoreWorkspaces\SampleProject\docs" --project-name "Sample Project" --project-code "SAMPLE"
-docucore build --project "D:\Repos\SampleProject" --output "D:\Repos\DocuCoreWorkspaces\SampleProject\docs"
-docucore status --project "D:\Repos\SampleProject" --output "D:\Repos\DocuCoreWorkspaces\SampleProject\docs"
+docucore init --project "C:\Projects\SampleProject" --output "C:\DocuCoreWorkspaces\SampleProject\docs" --project-name "Sample Project" --project-code "SAMPLE"
+
+docucore build --project "C:\Projects\SampleProject" --output "C:\DocuCoreWorkspaces\SampleProject\docs"
+
+docucore status --project "C:\Projects\SampleProject" --output "C:\DocuCoreWorkspaces\SampleProject\docs"
 ```
 
 ### Linux / Mac
 
 ```bash
-docucore init --project "/home/user/repos/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs" --project-name "Sample Project" --project-code "SAMPLE"
-docucore build --project "/home/user/repos/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs"
-docucore status --project "/home/user/repos/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs"
+docucore init --project "/home/user/projects/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs" --project-name "Sample Project" --project-code "SAMPLE"
+
+docucore build --project "/home/user/projects/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs"
+
+docucore status --project "/home/user/projects/SampleProject" --output "/home/user/docucore-workspaces/SampleProject/docs"
 ```
 
-## Outputs generados
-
-- `inventory.json`: payload estructurado del inventario tecnico.
-- `inventory.md`: inventario tecnico general y hallazgos por plugin.
-- `architecture.md`: lectura inicial de capas, backend, frontend e infraestructura.
-- `modules.md`: modulos tecnicos y posibles modulos funcionales inferidos.
-- `backend.md`: frameworks, estructura y endpoints backend detectados.
-- `frontend.md`: frameworks, scripts, componentes y rutas frontend detectadas.
-- `infrastructure.md`: Docker, Compose y CI/CD visibles en el repositorio.
-- `manifest.json`: lista de outputs generados, plugins y metadatos del snapshot.
-- `snapshot.md`: resumen versionado del conjunto documental generado.
-
-## Snapshots y latest
-
-Cada `build` actualiza la carpeta `latest/` con la version vigente de los artefactos habilitados y genera un snapshot historico en `historical/<snapshot_id>/`. El `manifest.json` refleja los outputs incluidos en cada corrida.
-
-## Comandos principales
-
-- `docucore init`: crea la estructura documental y la configuracion base.
-- `docucore scan`: recorre el repositorio y genera outputs segun la configuracion.
-- `docucore build`: ejecuta scan, genera documentos, actualiza `latest` y crea snapshot.
-- `docucore snapshot`: versiona los outputs ya generados.
-- `docucore status`: informa configuracion, latest, ultimo snapshot y outputs disponibles.
-
-## Filosofia sin IA por defecto
-
-DocuCore opera en modo base sin IA. La generacion documental inicial se realiza mediante escaneo de archivos, plugins deterministicos, reglas de deteccion y generadores Markdown.
-
-## IA opcional futura
-
-Una capa de IA puede incorporarse en el futuro como enriquecimiento opcional sobre artefactos ya generados. Esa capa no forma parte de la operacion base actual.
-
-## Ejemplos genericos
-
-```bash
-docucore build --project "D:\Repos\SampleProject" --output "D:\Repos\DocuCoreWorkspaces\SampleProject\docs"
-```
-
-## Estructura del proyecto
+## Generated structure
 
 ```text
-docucore/
-core/
-models/
-plugins/
-generators/
-exporters/
+docs/
+├── config/
+│   └── project.config.json
+├── outputs/
+│   ├── inventory/
+│   ├── architecture/
+│   ├── modules/
+│   ├── backend/
+│   ├── frontend/
+│   └── infrastructure/
+├── historical/
+│   └── <snapshot_id>/
+├── latest/
+└── sources/
+    └── optional_manual_inputs/
 ```
 
-La documentacion interna detallada vive en [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PLUGINS.md](docs/PLUGINS.md), [docs/CONFIGURATION.md](docs/CONFIGURATION.md) y [docs/ROADMAP.md](docs/ROADMAP.md).
+## Configuration
+
+DocuCore uses `project.config.json` to define:
+
+- `root_path`: the project being read
+- `documentation_path`: the documentation destination being written
+- `include_paths`
+- `exclude_paths`
+- `enabled_plugins`
+- `outputs`
+- `exporters`
+- `ai.enabled`
+
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for a full explanation.
+
+## Base mode without AI
+
+DocuCore operates in base mode without AI. Initial documentation generation relies on file scanning, deterministic plugins, detection rules, and Markdown generators.
+
+## Future optional AI layer
+
+An optional AI layer may be added later as an enrichment step on top of already generated artifacts. That capability is intentionally out of scope for the current base mode.
+
+## Roadmap
+
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the current roadmap and phase structure.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, tests, linting, documentation style, and pull request expectations.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
